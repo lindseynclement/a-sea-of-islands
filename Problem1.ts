@@ -1,30 +1,36 @@
-// represents each neighbor island's experiences
+// Represents each neighbor island's paths or experiences
 type Neighbor = {
   node: string;
   travelTime: number;
-  experienceTime: number;
+  resourceOrExperienceTime: number; // Used for either resource planting or experience gathering
 };
 
-// manages the graph of experiences and handles the DFS traversal
-class IslandTour {
-  private graph: Map<string, Neighbor[]>; // each experience node points to an array of Neighbor objects
-  private populations: Map<string, number>; // tracks population for each island
-  private lastVisit: Map<string, number>; // tracks last visit time for each island
+// Manages the graph of islands for either experiences or distribution
+class IslandNetwork {
+  private graph: Map<string, Neighbor[]>; // Each island points to an array of Neighbor objects
+  private populations: Map<string, number>; // Tracks population for each island
+  private lastVisit: Map<string, number>; // Tracks last visit time for each island
+  private canoesAvailable: number; // Number of canoes available
+  private resourcesDistributed: Set<string>; // Track where resources have been planted
 
-  constructor() {
+  constructor(canoes: number = 0) {
     this.graph = new Map();
     this.populations = new Map();
     this.lastVisit = new Map();
+    this.canoesAvailable = canoes;
+    this.resourcesDistributed = new Set();
   }
 
-  // adds an experience and its neighbors to the graph
-  addExperience(experience: string, neighbors: Neighbor[], population: number): void {
-    this.graph.set(experience, neighbors);
-    this.populations.set(experience, population);
-    this.lastVisit.set(experience, -Infinity); // initially, no visits
+  // Adds an experience or an island and its neighbors to the graph
+  addIslandOrExperience(island: string, neighbors: Neighbor[], population?: number): void {
+    this.graph.set(island, neighbors);
+    if (population !== undefined) {
+      this.populations.set(island, population);
+      this.lastVisit.set(island, -Infinity); // Initially, no visits
+    }
   }
 
-  // Depth-First Search algorithm to recursively explore paths and count unique experiences
+  // Depth-First Search algorithm for gathering experiences
   private dfs(
     current: string,
     visited: Set<string>,
@@ -32,18 +38,16 @@ class IslandTour {
     maxExperiencesCount: number,
     experienceCount: number,
   ): number {
-    // updates maxExperiencesCount if this path has found more unique experiences
     let currentMaxExperiences = Math.max(maxExperiencesCount, experienceCount);
-
     const neighbors = this.graph.get(current) || [];
 
     for (const neighbor of neighbors) {
-      const { node: nextNode, travelTime, experienceTime } = neighbor;
+      const { node: nextNode, travelTime, resourceOrExperienceTime } = neighbor;
 
       if (!visited.has(nextNode)) {
         visited.add(nextNode);
 
-        const newTime = totalTime + travelTime + experienceTime;
+        const newTime = totalTime + travelTime + resourceOrExperienceTime;
         const newExperienceCount = experienceCount + 1;
 
         if (newTime < 100) {
@@ -63,16 +67,16 @@ class IslandTour {
     return currentMaxExperiences;
   }
 
-  // Finds the maximum unique experiences a leader can gather, prioritizing high-population islands and recency
+  // Finds the maximum unique experiences a leader can gather
   findMaxExperiences(start: string): number {
     const visited = new Set<string>([start]);
     return this.dfs(start, visited, 0, 0, 1);
   }
 
-  // Additional method to calculate priority based on population and recency of visits
+  // Calculates priority based on population and recency of visits
   calculatePriority(island: string): number {
     const population = this.populations.get(island) || 0;
-    const recencyFactor = Date.now() - (this.lastVisit.get(island) || 0); // using current timestamp for simplicity
+    const recencyFactor = Date.now() - (this.lastVisit.get(island) || 0);
     return population * recencyFactor;
   }
 
@@ -81,23 +85,20 @@ class IslandTour {
     const visited = new Set<string>();
     visited.add(start);
     
-    let queue: string[] = [start]; // queue to manage islands to visit
+    let queue: string[] = [start];
     console.log(`Starting knowledge sharing journey from ${start}`);
     
     while (queue.length > 0) {
       const currentIsland = queue.shift();
       if (!currentIsland) continue;
 
-      // Update the last visit time for the current island
       this.lastVisit.set(currentIsland, Date.now());
-
       console.log(`Visited ${currentIsland} with population ${this.populations.get(currentIsland)} at time ${this.lastVisit.get(currentIsland)}`);
 
       const neighbors = this.graph.get(currentIsland) || [];
       for (const neighbor of neighbors) {
         const { node: nextNode, travelTime } = neighbor;
 
-        // Only add to queue if the island hasn’t been visited recently (based on interval)
         if (!visited.has(nextNode) || (Date.now() - (this.lastVisit.get(nextNode) || 0)) > visitInterval) {
           visited.add(nextNode);
           queue.push(nextNode);
@@ -106,28 +107,61 @@ class IslandTour {
       }
     }
   }
+
+  // Recursive function for distribution
+  private distributeResource(current: string, totalTime: number, resourceCount: number): number {
+    if (this.resourcesDistributed.has(current)) {
+      return resourceCount;
+    }
+
+    this.resourcesDistributed.add(current);
+    resourceCount++;
+
+    const neighbors = this.graph.get(current) || [];
+
+    for (const neighbor of neighbors) {
+      const { node: nextIsland, travelTime, resourceOrExperienceTime } = neighbor;
+
+      if (this.canoesAvailable > 0 && totalTime + travelTime + resourceOrExperienceTime < 100) {
+        const newTotalTime = totalTime + travelTime + resourceOrExperienceTime;
+        this.canoesAvailable--;
+        resourceCount = this.distributeResource(nextIsland, newTotalTime, resourceCount);
+        this.canoesAvailable++;
+      }
+    }
+
+    return resourceCount;
+  }
+
+  // Initiates distribution from the source island
+  distributeFrom(start: string): number {
+    this.resourcesDistributed.clear();
+    return this.distributeResource(start, 0, 0);
+  }
 }
 
-// test cases
-const tour = new IslandTour();
-tour.addExperience('experience1', [
-  { node: 'experience2', travelTime: 10, experienceTime: 5 },
-  { node: 'experience3', travelTime: 15, experienceTime: 8 },
+// Test cases
+const islandNetwork = new IslandNetwork(3);
+islandNetwork.addIslandOrExperience('experience1', [
+  { node: 'experience2', travelTime: 10, resourceOrExperienceTime: 5 },
+  { node: 'experience3', travelTime: 15, resourceOrExperienceTime: 8 },
 ], 1000);
 
-tour.addExperience('experience2', [
-  { node: 'experience4', travelTime: 20, experienceTime: 12 },
+islandNetwork.addIslandOrExperience('experience2', [
+  { node: 'experience4', travelTime: 20, resourceOrExperienceTime: 12 },
 ], 800);
 
-tour.addExperience('experience3', [
-  { node: 'experience5', travelTime: 10, experienceTime: 7 },
+islandNetwork.addIslandOrExperience('experience3', [
+  { node: 'experience5', travelTime: 10, resourceOrExperienceTime: 7 },
 ], 500);
 
-tour.addExperience('experience4', [], 1200); // No neighbors for experience4
+islandNetwork.addIslandOrExperience('experience4', [], 1200);
 
-const maxUniqueExperiences = tour.findMaxExperiences('experience1');
+const maxUniqueExperiences = islandNetwork.findMaxExperiences('experience1');
 console.log(`Maximum unique experiences: ${maxUniqueExperiences}`);
 
-// Example of knowledge sharing based on population priority and recency
 console.log("Starting the leader's journey for knowledge sharing:");
-tour.shareKnowledge('experience1', 10000); // 10 seconds as a visit interval example
+islandNetwork.shareKnowledge('experience1', 10000); // 10 seconds as a visit interval example
+
+const resourcesPlanted = islandNetwork.distributeFrom('experience1');
+console.log(`Total resources planted: ${resourcesPlanted}`);
