@@ -5,7 +5,7 @@ type Neighbor = {
   resourceOrExperienceTime: number; // Used for either resource planting or experience gathering
 };
 
-// Manages the graph of islands for either experiences or distribution
+// All: Manages the graph of islands for either experiences or distribution
 class IslandNetwork {
   private graph: Map<string, Neighbor[]>; // Each island points to an array of Neighbor objects
   private populations: Map<string, number>; // Tracks population for each island
@@ -73,14 +73,14 @@ class IslandNetwork {
     return this.dfs(start, visited, 0, 0, 1);
   }
 
-  // Calculates priority based on population and recency of visits
+  // Seth: Calculates priority based on population and recency of visits
   calculatePriority(island: string): number {
     const population = this.populations.get(island) || 0;
     const recencyFactor = Date.now() - (this.lastVisit.get(island) || 0);
     return population * recencyFactor;
   }
 
-  // Method to track the leader's journey for knowledge sharing
+  // Seth: Method to track the leader's journey for knowledge sharing
   shareKnowledge(start: string, visitInterval: number): void {
     const visited = new Set<string>();
     visited.add(start);
@@ -140,7 +140,7 @@ class IslandNetwork {
   }
 }
 
-// Test cases
+//  All: Test cases
 const islandNetwork = new IslandNetwork(3);
 islandNetwork.addIslandOrExperience('experience1', [
   { node: 'experience2', travelTime: 10, resourceOrExperienceTime: 5 },
