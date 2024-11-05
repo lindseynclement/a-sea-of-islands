@@ -1,3 +1,7 @@
+/** Lindsey Clement 
+    Problem 4
+**/
+
 // Represents each neighbor island's paths or experiences
 type Neighbor = {
   node: string;
