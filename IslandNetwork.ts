@@ -1,7 +1,3 @@
-/** Lindsey Clement 
-    Problem 4
-**/
-
 // Represents each neighbor island's paths or experiences
 type Neighbor = {
   node: string;
@@ -25,7 +21,7 @@ class IslandNetwork {
     this.resourcesDistributed = new Set();
   }
 
-  // Adds an experience or an island and its neighbors to the graph
+  // All: Adds an experience or an island and its neighbors to the graph
   addIslandOrExperience(island: string, neighbors: Neighbor[], population?: number): void {
     this.graph.set(island, neighbors);
     if (population !== undefined) {
@@ -112,7 +108,7 @@ class IslandNetwork {
     }
   }
 
-  // Recursive function for distribution
+  // Jayden: Recursive function for distribution
   private distributeResource(current: string, totalTime: number, resourceCount: number): number {
     if (this.resourcesDistributed.has(current)) {
       return resourceCount;
@@ -137,7 +133,7 @@ class IslandNetwork {
     return resourceCount;
   }
 
-  // Initiates distribution from the source island
+  // Jayden: Initiates distribution from the source island
   distributeFrom(start: string): number {
     this.resourcesDistributed.clear();
     return this.distributeResource(start, 0, 0);
@@ -166,6 +162,6 @@ console.log(`Maximum unique experiences: ${maxUniqueExperiences}`);
 
 console.log("Starting the leader's journey for knowledge sharing:");
 islandNetwork.shareKnowledge('experience1', 10000); // 10 seconds as a visit interval example
-
+// Jayden: Test case resources
 const resourcesPlanted = islandNetwork.distributeFrom('experience1');
 console.log(`Total resources planted: ${resourcesPlanted}`);
